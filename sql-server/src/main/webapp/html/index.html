@@ -1,0 +1,422 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns:v-bind="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta charset="UTF-8" http-equiv="Access-Control-Allow-Origin" content="*">
+	<title>ElementDemo</title>
+	<link rel="stylesheet" href="../element-ui/lib/theme-default/index.css">
+	<script src="../js/jquery-3.1.1.min.js"></script>
+	<script src="../js/json2.js"></script>
+	<script src="../js/vue.min.js"></script>  
+	<script src="../js/vue-resource.js"></script>
+	<script src="../element-ui/lib/index.js"></script>
+
+	<style>
+	  .el-select .el-input {
+	    width: 200px;
+	  }
+
+  	  .el-table .info-row {
+    		background: #c9e5f5;
+      }
+
+      #top {
+	      background:#20A0FF;
+	      padding:5px;
+	      overflow:hidden
+      }
+	</style>
+	
+</head>
+<body>
+    <div id="test">		        
+
+		<div id="top">
+            <div class="text" style=" text-align:center;"><font color="#84420" size="6">用户列表</font></div>
+			<span style="float:right;">
+                <el-button type="success" icon="el-icon-edit" position="right" @click="add">新增</el-button>
+            </span>
+		</div>	
+		
+		
+		<br/>
+
+		<div style="margin-top:15px">
+			<el-button type="text" @click="dialogFormVisible = true">打开嵌套表单的 Dialog</el-button>
+
+			<el-dialog title="收货地址" :visible.sync="dialogFormVisible">
+				<el-form :model="form">
+					<el-form-item label="活动名称" :label-width="formLabelWidth">
+						<el-input v-model="form.name" auto-complete="off"></el-input>
+					</el-form-item>
+					<el-form-item label="活动区域" :label-width="formLabelWidth">
+						<el-select v-model="form.region" placeholder="请选择活动区域">
+							<el-option label="区域一" value="shanghai"></el-option>
+							<el-option label="区域二" value="beijing"></el-option>
+						</el-select>
+					</el-form-item>
+				</el-form>
+				<div slot="footer" class="dialog-footer">
+					<el-button @click="dialogFormVisible = false">取 消</el-button>
+					<el-button type="primary" @click="dialogFormVisible = false">确 定</el-button>
+				</div>
+			</el-dialog>
+		</div>
+
+
+
+        <div style="margin-top:15px">
+           <el-input placeholder="请输入查询内容" v-model="criteria" style="padding-bottom:10px;">
+			  <el-select v-model="select" slot="prepend" placeholder="请选择查询类别">      <!--选择框slot指示位置-->
+			     <el-option label="用户编码" value="1"></el-option>
+			     <el-option label="年龄" value="2"></el-option>
+				 <el-option label="邮箱" value="3"></el-option>
+				 <el-option label="电话" value="4"></el-option>
+			  </el-select>
+			  <el-button slot="append" icon="search" @click="search"></el-button>
+		  </el-input>
+
+			<!-- Form -->
+
+
+
+		  <el-table
+		    ref="userTable"
+		    :data="userData"
+			stripe
+		    style="width:100%"
+		    border
+			:default-sort = "{prop: 'userId', order: 'ascending'}"
+		    @selection-change="handleSelectionChange"
+		    @row-click="handleclick"
+		    :row-class-name = "tableRowClassName"
+		    >
+		    <el-table-column
+		      type="selection"
+		      >
+		    </el-table-column>
+
+             <el-table-column
+              prop="userId"
+              label="用户Id"
+              sortable
+              show-overflow-tooltip
+              v-if="false">  <!--内容过长时隐藏-->
+             </el-table-column>
+		    <el-table-column
+		      prop="userCode"
+		      label="用户编码"
+		      sortable
+		      show-overflow-tooltip>  <!--内容过长时隐藏-->
+		    </el-table-column>
+		    <el-table-column
+		      prop="age"
+		      label="年龄"
+		      sortable>
+		    </el-table-column>
+             <el-table-column
+              prop="phone"
+              label="电话"
+              sortable>
+             </el-table-column>
+             <el-table-column
+              prop="mail"
+              label="邮箱"
+              sortable>
+             </el-table-column>
+             <el-table-column
+              prop="groupId"
+              label="组信息"
+              sortable>
+             </el-table-column>
+	        <el-table-column label="操作">
+		      <template scope="scope">
+		        <el-button
+		          size="small"
+		          type="primary"
+		          @click="handleEdit(scope.$index, scope.row)">编辑</el-button>
+                <el-button
+                  size="small"
+                  type="success"
+                  @click="handleDetail(scope.$index, scope.row)">详情</el-button>
+		        <el-button
+		          size="small"
+		          type="danger"
+		          @click="handleDelete(scope.$index,scope.row)">删除</el-button>
+
+			  </template>
+
+		    </el-table-column>
+		  </el-table>
+
+
+		  <div align="center">
+			  <el-pagination
+			      @size-change="handleSizeChange"
+			      @current-change="handleCurrentChange"
+			      :current-page="currentPage"
+			      :page-sizes="[10, 20, 30, 40]"
+			      :page-size="pagesize"
+			      layout="total, sizes, prev, pager, next, jumper"
+			      :total="totalCount">
+			  </el-pagination>
+		  </div>
+		</div>
+
+
+
+    </div>
+	
+    <footer align="center">
+        <p>&copy; Spring Boot Demo</p>
+    </footer>
+
+
+
+    <meta http-equiv="Access-Control-Allow-Origin" content="*">
+
+
+    <script>
+
+	var vue = new Vue({			
+			el:"#test",
+		    data: {		  
+		    	//表格当前页数据
+		    	userData: [],
+		    	
+		    	//多选数组
+		        multipleSelection: [],
+		        
+		        //请求的URL
+		        url:'http://localhost:1234/list',
+		        
+		        //搜索条件
+		        criteria: '',
+		        
+		        //下拉菜单选项
+		        select: '',
+		        
+		        //默认每页数据量
+		        pagesize: 10,
+		        
+		        //默认高亮行数据userId
+		        highlightId: -1,
+		        
+		        //当前页码
+		        currentPage: 1,
+		        
+		        //查询的页码
+		        start: 1,
+		        
+		        //默认数据总数
+		        totalCount: 1000,
+
+                dialogFormVisible:false,
+
+/*				dialogTableVisible: false,
+
+				dialogFormVisible: false,
+
+				form: {
+                    name: '',
+                    region: '',
+                    date1: '',
+                    date2: '',
+                    delivery: false,
+                    type: [],
+                    resource: '',
+                    desc: ''
+                },
+                formLabelWidth: '120px'*/
+		    },
+
+		    methods: {
+
+		        //从服务器读取数据
+                loadData: function(pageNum, pageSize){
+
+                    this.$http.get(this.url,{start:pageNum, pagesize:pageSize}).then(function(res){
+                        this.userData = res.data.data;
+                        this.totalCount = res.data.total;
+                    },function(){
+                        console.log('failed');
+                    });
+                },
+
+                foundData: function(select,criteria, pageNum, pageSize){
+                    if(select==1)
+                    {
+                        this.$http.get('http://localhost:1234/getuser',{age:0,userCode:criteria, start:pageNum, pagesize:pageSize}).then(function(res){
+                        this.userData = res.data.data;
+                        this.totalCount = res.data.total;
+                    },function(){
+                        console.log('failed');
+                    });
+                    }else if(select==2){
+                        this.$http.get('http://localhost:1234/getuser',{age:criteria, start:pageNum, pagesize:pageSize}).then(function(res){
+                            this.userData = res.data.data;
+                            this.totalCount = res.data.total;
+                        },function(){
+                            console.log('failed');
+                        });
+                    }
+                    else if(select==3){
+                        this.$http.get('http://localhost:1234/getuser',{age:0,mail:criteria, start:pageNum, pagesize:pageSize}).then(function(res){
+                            this.userData = res.data.data;
+                            this.totalCount = res.data.total;
+                        },function(){
+                            console.log('failed');
+                        });
+                    }else{
+                        this.$http.get('http://localhost:1234/getuser',{age:0,phone:criteria, start:pageNum, pagesize:pageSize}).then(function(res){
+                            this.userData = res.data.data;
+                            this.totalCount = res.data.total;
+                        },function(){
+                            console.log('failed');
+                        });
+                    }
+
+                },
+
+
+
+				//多选响应
+			    handleSelectionChange: function(val) {
+			        this.multipleSelection = val;
+			    },
+			    
+			    //点击行响应
+			    handleclick: function(row, event, column){
+			    	this.highlightId = row.userId;
+			    },
+
+
+                //添加
+                add: function(){
+                    this.$prompt('请输入名称', '提示', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                    }).then(({ value }) => {
+                        if(value==''||value==null)
+                            return;
+                        this.$http.post('http://localhost:1234/add',{"name":value},{emulateJSON: true}).then(function(res){
+                            this.loadData(this.criteria, this.currentPage, this.pagesize);
+                        },function(){
+                            console.log('failed');
+                        });
+                    }).catch(() => {
+
+                    });
+
+                },
+
+
+			    //编辑
+				handleEdit: function(index, row) {
+
+				    this.$prompt('请输入新信息', '提示', {
+		                  confirmButtonText: '确定',
+		                  cancelButtonText: '取消',
+		                }).then(({userCode,age,mail,phone,groupId,createTime,createBy,modifiedTime,modifiedBy}) => {
+		                	if(userCode==''||userCode==null)
+		        				return;
+		        			this.$http.post('http://localhost:1234/update',{userId:row.userId,userCode:userCode,"age":age,"mail":mail,"phone":phone,"groupId":groupId,"createTime":createTime,"createBy":createBy,"modifiedTime":modifiedTime,"modifiedBy":modifiedBy},{emulateJSON: true}).then(function(res){
+		        				this.loadData(this.criteria, this.currentPage, this.pagesize);
+		                    },function(){
+		                        console.log('failed');
+		                    });
+		                }).catch(() => {
+
+		            });
+		        },
+
+                //详情
+                handleDetail: function(index, row) {
+                    this.$http.get('http://localhost:1234/detail',{"userCode":row.userCode},{emulateJSON: true}).then(function(res){
+                        this.$alert(res.data.data,'详情',{
+                            confirmButtonText: '确定',
+                            callback: action => {
+                                this.$message({
+                                    type: 'info',
+                                    message: `action: ${ action }`
+                                });
+                            }
+                        });
+                    },function(){
+                        console.log('failed');
+                    });
+                    /*this.$alert(this.userData,'详情',{
+                        confirmButtonText: '确定',
+                            callback: action => {
+                            this.$message({
+                                type: 'info',
+                                message: `action: ${ action }`
+                            });
+                        }
+                    });*/
+				},
+
+
+
+		        //单行删除
+			    handleDelete: function(index, row) {
+					this.$http.post('http://localhost:1234/delete',{userCode:row.userCode},{emulateJSON: true}).then(function(res){
+						this.loadData(this.currentPage, this.pagesize);
+		            },function(){
+		                console.log('failed');
+		            });
+		        },
+		        
+		        //搜索
+		        search: function(){
+		        	this.foundData(this.select,this.criteria,this.currentPage, this.pagesize);
+		        },
+		        
+
+		        
+/*		        //多项删除
+		        deletenames: function(){
+		        	if(this.multipleSelection.length==0)
+		        		return;
+		        	var array = [];
+		        	this.multipleSelection.forEach((item) => {
+		        		array.push(item.userId);
+			        })
+					this.$http.post('http://127.0.0.1:2244/delete',{"array":array},{emulateJSON: true}).then(function(res){
+						this.loadData(this.criteria, this.currentPage, this.pagesize);
+		            },function(){
+		                console.log('failed');
+		            });
+		        },*/
+		      
+		        //改变当前点击的行的class，高亮当前行
+		        tableRowClassName: function(row, index){
+		    	   if(row.userId == this.highlightId)
+		    	   {
+		    		  return 'info-row';
+		    	   }
+		        },
+		      
+		        //每页显示数据量变更
+		        handleSizeChange: function(val) {
+		            this.pagesize = val;
+		            this.loadData(this.currentPage, this.pagesize);
+		        },
+		        
+		        //页码变更
+		        handleCurrentChange: function(val) {
+		            this.currentPage = val;
+		            this.loadData(this.currentPage, this.pagesize);
+		        },	      
+		        		        
+		    },
+
+		    
+		  });
+	
+		  //载入数据
+    	  vue.loadData(vue.currentPage, vue.pagesize);
+	</script>  
+	
+</body>
+</html>
